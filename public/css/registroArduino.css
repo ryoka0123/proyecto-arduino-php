@@ -1,0 +1,108 @@
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #b270d3, #5d9fc9);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.form-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 40px 30px 30px 30px;
+    width: 340px;
+    margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    color: white;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+.form-container h2 {
+    margin-top: 0;
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+}
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+.form-fields input[type="text"] {
+    width: 95%;
+    padding: 10px 15px;
+    margin: 15px 0;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 6px;
+    font-size: 16px;
+    outline: none;
+    transition: box-shadow 0.2s, background 0.2s;
+}
+.form-fields input[type="text"]:focus {
+    background: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 0 6px #b270d3;
+}
+::placeholder {
+    color: white;
+    opacity: 0.7;
+}
+.arduino-btn {
+    width: 100%;
+    background: white;
+    color: #12325f;
+    border: none;
+    padding: 12px 0;
+    border-radius: 8px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    margin-top: 10px;
+}
+.arduino-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+.back-btn {
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    font-size: 22px;
+    text-decoration: none;
+    color: #fff;
+    background: #12325f;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 38px; /* Asegura centrado vertical */
+    padding: 0;
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+    box-sizing: border-box;
+    border: none;
+}
+.back-btn:active {
+    outline: none;
+}
+.back-btn span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+}
+.messages {
+    margin-bottom: 10px;
+}
+.messages div {
+    color: #ffb3b3;
+    font-size: 0.98em;
+}
