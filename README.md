@@ -30,13 +30,6 @@ Este proyecto fue creado con [Laravel](https://laravel.com/).
    php artisan migrate
    ```
 
-4. **(Opcional) Instala dependencias de Node y compila assets**
-
-   ```sh
-   npm install
-   npm run dev
-   ```
-
 ## Ejecución
 
 Inicia el servidor de desarrollo de Laravel:

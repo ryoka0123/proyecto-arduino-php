@@ -1,20 +1,30 @@
+# Created by https://www.toptal.com/developers/gitignore/api/laravel
+# Edit at https://www.toptal.com/developers/gitignore?templates=laravel
+
+### Laravel ###
+/vendor/
 node_modules/
-package-lock.json
-database.sqlite
-dist/
-*.log
-vendor/
-composer.lock
-/public/storage
-/storage/*.key
-/storage/app/public
-/storage/framework/cache/data
-/storage/logs
-/storage/debugbar
-phpunit.result.cache
-coverage/
-.DS_Store
-Thumbs.db
-*.bak
-*.tmp
-*.swp
+npm-debug.log
+yarn-error.log
+database
+
+# Laravel 4 specific
+bootstrap/compiled.php
+app/storage/
+
+# Laravel 5 & Lumen specific
+public/storage
+public/hot
+
+# Laravel 5 & Lumen specific with changed public path
+public_html/storage
+public_html/hot
+
+storage/*.key
+.env
+Homestead.yaml
+Homestead.json
+/.vagrant
+.phpunit.result.cache
+
+# End of https://www.toptal.com/developers/gitignore/api/laravel

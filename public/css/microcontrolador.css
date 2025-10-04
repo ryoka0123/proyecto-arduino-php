@@ -27,6 +27,7 @@ body {
     flex: 1;
     text-align: center;
     letter-spacing: 1px;
+    text-transform: capitalize;
 }
 .navbar .acciones {
     position: absolute;

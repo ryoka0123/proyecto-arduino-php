@@ -21,11 +21,16 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // Obtenemos las credenciales
         $credentials = $request->only('username', 'password');
 
+        // Convertimos el campo 'username' a minúsculas para la autenticación
+        $username = strtolower($credentials['username']);
+
+        // Intentamos autenticar por nombre de usuario (en minúsculas) o por email
         if (
-            Auth::attempt(['name' => $credentials['username'], 'password' => $credentials['password']]) ||
-            Auth::attempt(['email' => $credentials['username'], 'password' => $credentials['password']])
+            Auth::attempt(['name' => $username, 'password' => $credentials['password']]) ||
+            Auth::attempt(['email' => $username, 'password' => $credentials['password']])
         ) {
             $request->session()->regenerate();
             return redirect()->route('microcontrolador');
@@ -41,8 +46,11 @@ class AuthController extends Controller
             return back()->withInput()->withErrors(['password2' => 'Las contraseñas no coinciden.']);
         }
 
-        // 2. Validar si el usuario o email ya existen
-        $userExists = User::where('name', $request->username)->orWhere('email', $request->email)->exists();
+        // Convertimos el username a minúsculas desde el principio
+        $usernameInLowerCase = strtolower($request->username);
+
+        // 2. Validar si el usuario (en minúsculas) o email ya existen
+        $userExists = User::where('name', $usernameInLowerCase)->orWhere('email', $request->email)->exists();
         if ($userExists) {
             return back()->withInput()->withErrors(['username' => 'El usuario o email ya está registrado.']);
         }
@@ -50,13 +58,13 @@ class AuthController extends Controller
         // 3. Validar el resto de campos
         $request->validate([
             'username' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'email' => 'required|email|max:255|unique:users',
             'password1' => 'required|string|min:6',
         ]);
 
-        // 4. Crear el usuario
+        // 4. Crear el usuario con el nombre de usuario en minúsculas
         $user = User::create([
-            'name' => $request->username,
+            'name' => $usernameInLowerCase,
             'email' => $request->email,
             'password' => Hash::make($request->password1),
         ]);
