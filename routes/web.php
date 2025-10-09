@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ArduinoController;
 use App\Http\Controllers\TriggerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ManagerController;
 
 Route::get('/', [AuthController::class, 'showLogin'])->name('inicioSesion');
 
@@ -26,6 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::post('arduino/{arduino}/triggers/registro', [TriggerController::class, 'store']);
     Route::post('arduino/{arduino}/triggers/{trigger}/editar', [TriggerController::class, 'update'])->name('editar_trigger');
     Route::post('arduino/{arduino}/triggers/{trigger}/eliminar', [TriggerController::class, 'destroy'])->name('eliminar_trigger');
+    Route::get('arduino/{arduino}/triggers/editor', [ManagerController::class, 'index'])->name('editor-codigo');
 });
 
 Route::get('recuperar', function() { return view('auth.forgot_password'); })->name('recuperar');
