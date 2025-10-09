@@ -1,97 +1,176 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <title>Triggers del Arduino</title>
-    <link rel="stylesheet" href="{{ asset('css/triggers.css') }}">
+    <title>Triggers de {{ $arduino->nombre }}</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link rel="stylesheet" as="style" onload="this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    {{-- Datos cruciales para que JavaScript se comunique con Laravel --}}
     <script>
         window.ARDUINO = {
             id: {{ $arduino->id }},
             ip: "{{ $arduino->ip }}",
-            editar_trigger_url: "{{ route('editar_trigger', [$arduino->id, 0]) }}",
-            eliminar_trigger_url: "{{ route('eliminar_trigger', [$arduino->id, 0]) }}"
+            editar_trigger_url: "{{ route('editar_trigger', [$arduino->id, 0]) }}", // URL base para editar
+            eliminar_trigger_url: "{{ route('eliminar_trigger', [$arduino->id, 0]) }}" // URL base para eliminar
         };
     </script>
 </head>
-
-<body>
-    <div class="top-bar">
-        <div style="display: flex; align-items: center;">
-            <a href="{{ route('microcontrolador') }}" style="text-decoration: none; font-size: 28px; margin-right: 15px;">&#8592;</a>
-            <span>{{ $arduino->nombre }}</span>
-        </div>
-        <form method="get" action="{{ route('registroTriggers', $arduino->id) }}">
-            <button class="add-btn" title="Agregar Trigger">+</button>
-        </form>
-    </div>
-
-    <div class="container">
-        <!-- Indicador de temperatura -->
-        <div id="temp-arduino" style="text-align:center; font-size:20px; margin-bottom:20px;">
-            Temperatura: <span id="valor-temp">--</span> °C
-        </div>
-
-        <div class="triggers-container">
-            @if($triggers->count())
-            @foreach($triggers as $trigger)
-            <div class="trigger-card">
-                <div class="trigger-title">{{ $trigger->nombre }}</div>
-                <div class="trigger-context">{{ $trigger->contexto }}</div>
-                <button class="action-btn"
-                    onclick="accionarTrigger('{{ $arduino->ip }}', '{{ addslashes($trigger->contexto) }}', this)">
-                    Accionar
-                </button>
-                <div class="trigger-btns">
-                    <button class="edit-btn"
-                        onclick="openEditModal({{ $trigger->id }}, {{ json_encode($trigger->nombre) }}, {{ json_encode($trigger->contexto) }})">
-                        Editar
-                    </button>
-                    <button class="delete-btn"
-                        onclick="openDeleteModal({{ $trigger->id }}, {{ json_encode($trigger->nombre) }})">
-                        Eliminar
-                    </button>
+<body class="bg-[#101a23]">
+    <div class="relative flex min-h-screen w-full flex-col" style='font-family: "Space Grotesk", "Noto Sans", sans-serif;'>
+        <div class="layout-container flex h-full grow flex-col">
+            
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#223749] px-4 sm:px-10 py-3 sticky top-0 bg-[#182834] z-40">
+                <div class="flex items-center gap-3 text-white">
+                    <a href="{{ route('microcontrolador') }}" title="Volver a Dispositivos" class="flex items-center justify-center p-2 rounded-full hover:bg-[#223749] transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg>
+                    </a>
+                    <div class="h-6 w-px bg-[#223749]"></div>
+                    <div class="flex items-center gap-2">
+                         <svg viewBox="0 0 48 48" fill="none" class="size-4" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor"></path></svg>
+                        <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Panel de Control</h1>
+                    </div>
                 </div>
+                <div class="flex flex-1 justify-end items-center gap-4">
+                    <a href="{{ route('registroTriggers', $arduino->id) }}" class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-[#2094f3] text-white text-sm font-bold leading-normal hover:bg-[#1a7ad1] transition-colors">
+                        <span>Añadir Trigger</span>
+                    </a>
+                </div>
+            </header>
+
+            <main class="flex flex-1 justify-center p-4 sm:p-5 lg:px-40">
+                <div class="w-full max-w-6xl">
+                    <div class="p-4">
+                        <h2 class="text-white tracking-light text-3xl font-bold leading-tight">{{ $arduino->nombre }}</h2>
+                        <div id="temp-arduino" class="text-[#90b0cb] text-lg mt-2">
+                            Temperatura: <span id="valor-temp" class="text-white font-semibold">--</span> °C
+                        </div>
+                    </div>
+
+                    <h3 class="text-white text-2xl font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Triggers</h3>
+
+                    @if($triggers->count())
+                        <div class="flex flex-wrap gap-5 p-4">
+                            @foreach($triggers as $trigger)
+                                <div class="w-full sm:w-[300px] flex flex-col gap-4 rounded-lg border border-[#314f68] bg-[#182834] p-4">
+                                    <div class="flex-grow">
+                                        <h4 class="text-white text-lg font-bold leading-tight">{{ $trigger->nombre }}</h4>
+                                        <p class="text-[#90b0cb] text-sm font-normal leading-normal mt-1 break-all">{{ $trigger->contexto }}</p>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row items-center gap-2 mt-2">
+                                        <button class="w-full bg-[#2094f3] text-white rounded-md py-2 text-sm font-bold hover:bg-[#1a7ad1] transition-colors"
+                                            onclick="accionarTrigger('{{ $arduino->ip }}', '{{ addslashes($trigger->contexto) }}', this)">
+                                            Accionar
+                                        </button>
+                                        <div class="w-full sm:w-auto flex items-center gap-2">
+                                             <button class="w-full sm:w-auto px-4 py-2 bg-[#4a5a6a] text-white rounded-md text-sm font-bold hover:bg-[#5f748a] transition-colors"
+                                                onclick="openEditModal({{ $trigger->id }}, {{ json_encode($trigger->nombre) }}, {{ json_encode($trigger->contexto) }})">
+                                                Editar
+                                            </button>
+                                            <button class="w-full sm:w-auto px-4 py-2 bg-[#e53e3e] text-white rounded-md text-sm font-bold hover:bg-[#c53030] transition-colors"
+                                                onclick="openDeleteModal({{ $trigger->id }}, {{ json_encode($trigger->nombre) }})">
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="p-4 text-center">
+                            <strong class="text-xl text-[#90b0cb] mt-10">NO TIENES NINGÚN TRIGGER REGISTRADO.</strong>
+                        </div>
+                    @endif
+                </div>
+            </main>
+        </div>
+
+        {{-- MODALES --}}
+        <div id="modalEliminarTrigger" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center hidden z-50">
+            <div class="modal-content bg-[#182834] p-6 rounded-lg shadow-xl w-full max-w-sm text-center border border-[#223749]">
+                <h3 id="modalMensajeTrigger" class="text-lg font-bold text-white"></h3>
+                <form id="formEliminarTrigger" method="post" class="mt-6">
+                    @csrf
+                    <div class="flex gap-4">
+                        <button type="button" onclick="closeDeleteModal()" class="w-full py-2 bg-[#4a5a6a] text-white rounded-lg font-bold hover:bg-[#5f748a] transition-colors">Cancelar</button>
+                        <button type="submit" class="w-full py-2 bg-[#e53e3e] text-white rounded-lg font-bold hover:bg-[#c53030] transition-colors">Confirmar</button>
+                    </div>
+                </form>
             </div>
-            @endforeach
-            @else
-            <strong>NO TIENES NINGÚN TRIGGER REGISTRADO EN ESTE ARDUINO.</strong>
-            @endif
         </div>
-    </div>
-
-    <!-- Modal para eliminar trigger -->
-    <div id="modalEliminarTrigger" class="modal">
-        <div class="modal-content">
-            <h3 id="modalMensajeTrigger"></h3>
-            <form id="formEliminarTrigger" method="post" style="margin-top:20px;">
-                @csrf
-                <button type="button" onclick="closeDeleteModal()">Cancelar</button>
-                <button type="submit">Confirmar</button>
-            </form>
+        <div id="editModal" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center hidden z-50">
+            <div class="modal-content bg-[#182834] p-6 rounded-lg shadow-xl w-full max-w-sm border border-[#223749]">
+                <h3 class="text-lg font-bold text-white mb-6">Editar Trigger</h3>
+                <form id="editForm" method="post">
+                    @csrf
+                    <div class="space-y-4">
+                        <input type="text" id="editNombre" name="nombre" required class="w-full p-3 bg-[#101a23] text-white rounded-lg border border-[#223749] focus:ring-2 focus:ring-[#2094f3] focus:outline-none">
+                        <input type="text" id="editContexto" name="contexto" required class="w-full p-3 bg-[#101a23] text-white rounded-lg border border-[#223749] focus:ring-2 focus:ring-[#2094f3] focus:outline-none">
+                    </div>
+                    <div class="flex gap-4 mt-6">
+                        <button type="button" onclick="closeEditModal()" class="w-full py-2 bg-[#4a5a6a] text-white rounded-lg font-bold hover:bg-[#5f748a] transition-colors">Cancelar</button>
+                        <button type="submit" class="w-full py-2 bg-[#2094f3] text-white rounded-lg font-bold hover:bg-[#1a7ad1] transition-colors">Confirmar</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Modal para editar trigger -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h3>Editar Trigger</h3>
-            <form id="editForm" method="post" style="margin-top:20px;">
-                @csrf
-                <input type="text" id="editNombre" name="nombre" required><br>
-                <input type="text" id="editContexto" name="contexto" required><br>
-                <button type="button" onclick="closeEditModal()">Cancelar</button>
-                <button type="submit">Confirmar</button>
-            </form>
-        </div>
-    </div>
+        <button id="voice-btn" title="Control por voz" class="fixed bottom-8 right-8 bg-blue-600 text-white rounded-full size-16 flex items-center justify-center shadow-lg cursor-pointer z-50 hover:bg-blue-500 transition-all duration-300 transform hover:scale-110 animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28px" height="28px" fill="currentColor" viewBox="0 0 256 256"><path d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,143.6V232a8,8,0,0,1-16,0V207.6A80.11,80.11,0,0,1,48,128a8,8,0,0,1,16,0,64,64,0,0,0,128,0,8,8,0,0,1,16,0A80.11,80.11,0,0,1,136,207.6Z"></path></svg>
+        </button>
+        
+        {{-- ================================================================= --}}
+        {{-- || SCRIPT CORREGIDO PARA MANEJAR LOS MODALES (AÑADIDO AHORA) || --}}
+        {{-- ================================================================= --}}
+        <script>
+            // --- Lógica para el Modal de Edición ---
+            function openEditModal(id, nombre, contexto) {
+                const modal = document.getElementById('editModal');
+                const form = document.getElementById('editForm');
+                const nombreInput = document.getElementById('editNombre');
+                const contextoInput = document.getElementById('editContexto');
 
-    <!-- Botón de micrófono flotante -->
-    <button id="voice-btn" title="Control por voz"
-        style="position: fixed; bottom: 30px; right: 30px; background: #2196F3; color: #fff; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; box-shadow: 0 4px 16px rgba(33,150,243,0.18); cursor: pointer; z-index: 2000;">
-        🎤
-    </button>
-    <script src="{{ asset('js/triggers.js') }}"></script>
+                // Construye la URL correcta reemplazando el '0' con el ID del trigger
+                let url = window.ARDUINO.editar_trigger_url.replace('/0', '/' + id);
+                form.action = url;
+
+                // Rellena el formulario con los datos actuales del trigger
+                nombreInput.value = nombre;
+                contextoInput.value = contexto;
+
+                // Muestra el modal
+                modal.classList.remove('hidden');
+            }
+
+            function closeEditModal() {
+                document.getElementById('editModal').classList.add('hidden');
+            }
+
+            // --- Lógica para el Modal de Eliminación ---
+            function openDeleteModal(id, nombre) {
+                const modal = document.getElementById('modalEliminarTrigger');
+                const form = document.getElementById('formEliminarTrigger');
+                const message = document.getElementById('modalMensajeTrigger');
+
+                // Construye la URL correcta
+                let url = window.ARDUINO.eliminar_trigger_url.replace('/0', '/' + id);
+                form.action = url;
+
+                // Pone el mensaje de confirmación
+                message.innerHTML = `¿Estás seguro de que quieres eliminar el trigger "<strong>${nombre}</strong>"?`;
+
+                // Muestra el modal
+                modal.classList.remove('hidden');
+            }
+
+            function closeDeleteModal() {
+                document.getElementById('modalEliminarTrigger').classList.add('hidden');
+            }
+        </script>
+        
+        {{-- Tu archivo JS original para el resto de la funcionalidad --}}
+        <script src="{{ asset('js/triggers.js') }}"></script>
+    </div>
 </body>
-
 </html>
