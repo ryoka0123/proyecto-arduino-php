@@ -25,6 +25,8 @@
 
             <header
                 class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#223749] px-4 sm:px-10 py-3">
+                
+                <!-- Contenedor Izquierdo -->
                 <div class="flex items-center gap-3 text-white">
                     <a href="{{ route('microcontrolador') }}" title="Volver a Dispositivos"
                         class="flex items-center justify-center p-2 rounded-full hover:bg-[#223749] transition-colors">
@@ -35,15 +37,9 @@
                             </path>
                         </svg>
                     </a>
-                    <a href="{{ route('editor-codigo', $arduino->id) }}" title="Editor"
-                        class="flex items-center justify-center p-2 rounded-full hover:bg-[#223749] transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
-                            viewBox="0 0 256 256">
-                            <path
-                                d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z">
-                            </path>
-                        </svg>
-                    </a>
+                    
+                    {{-- El botón del editor de código se ha movido desde aquí --}}
+
                     <div class="h-6 w-px bg-[#223749]"></div>
                     <div class="flex items-center gap-2">
                         <svg viewBox="0 0 48 48" fill="none" class="size-4" xmlns="http://www.w3.org/2000/svg">
@@ -54,6 +50,15 @@
                         <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Panel de Control</h1>
                     </div>
                 </div>
+
+                <!-- Contenedor Derecho (NUEVO) -->
+                <div>
+                    <a href="{{ route('editor-codigo', $arduino->id) }}" title="Editor de Código"
+                       class="flex items-center gap-2 h-10 px-4 bg-[#2094f3] text-white text-sm font-bold rounded-lg hover:bg-[#1a7ad1] transition-colors">
+                        <span>Editor de Código</span>
+                    </a>
+                </div>
+
             </header>
 
             <main class="flex flex-1 justify-center p-4 sm:p-5 lg:px-40">

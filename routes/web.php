@@ -27,7 +27,10 @@ Route::middleware('auth')->group(function () {
     Route::post('arduino/{arduino}/triggers/registro', [TriggerController::class, 'store']);
     Route::post('arduino/{arduino}/triggers/{trigger}/editar', [TriggerController::class, 'update'])->name('editar_trigger');
     Route::post('arduino/{arduino}/triggers/{trigger}/eliminar', [TriggerController::class, 'destroy'])->name('eliminar_trigger');
-    Route::get('arduino/{arduino}/triggers/editor', [ManagerController::class, 'index'])->name('editor-codigo');
+    
+    Route::get('arduino/{arduino}/editor', [ManagerController::class, 'index'])->name('editor-codigo');
+    Route::post('arduino/{arduino}/compile', [ManagerController::class, 'compile'])->name('compile-code');
+    Route::post('arduino/{arduino}/save', [ManagerController::class, 'save'])->name('save-code');
 });
 
 Route::get('recuperar', function() { return view('auth.forgot_password'); })->name('recuperar');

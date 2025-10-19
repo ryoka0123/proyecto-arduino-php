@@ -23,8 +23,34 @@ Este proyecto fue creado con [Laravel](https://laravel.com/).
    composer install
    ```
 
+3. **Instala las dependencias de python**
 
-3. **Ejecuta las migraciones**
+   ### Crear el entorno virtual
+   ```sh
+   python -m venv .venv
+   ```
+
+   ### Activar el entorno virtual
+
+   #### Windows
+
+   ```sh
+   .venv/Scripts/activate
+   ```
+
+   #### Linux
+   ```sh
+   source .venv/bin/activate
+   ```
+
+   ### Instalar las dependencias
+
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+
+4. **Ejecuta las migraciones**
 
    ```sh
    php artisan migrate
@@ -36,6 +62,10 @@ Inicia el servidor de desarrollo de Laravel:
 
 ```sh
 php artisan serve
+```
+
+```sh
+uvicorn app.core.main:app --host 0.0.0.0 --port 8000 --watch
 ```
 
 El proyecto estará disponible en [http://localhost:8000](http://localhost:8000).

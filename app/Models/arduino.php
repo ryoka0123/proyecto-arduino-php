@@ -10,7 +10,7 @@ class Arduino extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'nombre', 'ip'];
+    protected $fillable = ['user_id', 'nombre', 'ip', 'code'];
 
     public function user()
     {

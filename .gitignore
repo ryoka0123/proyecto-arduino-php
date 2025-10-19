@@ -7,6 +7,8 @@
 node_modules/
 
 # Archivos de entorno
+venv
+.venv
 .env
 .env.*
 !.env.example
@@ -71,6 +73,9 @@ coverage/
 *.sql
 *.sqlite
 /database/database.sqlite
+
+# Ignorar carpetas de caché de Python
+__pycache__/
 
 # ======================================
 # Carpetas personalizadas (ajusta según tu proyecto)
