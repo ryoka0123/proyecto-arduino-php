@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Routers
 from app.core.routers import compiler
 
 
@@ -25,6 +27,7 @@ app.add_middleware(
 @app.get("/api/compiler/health", tags=["Health"])
 def health():
     return {"status": "ok"}
+
 
 app.include_router(
     compiler.router, prefix="/api/compiler", tags=["Compilador"], responses={404: {"description": "Not Found"}})

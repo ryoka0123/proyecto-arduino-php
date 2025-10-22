@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter
 import subprocess, tempfile, os
+
+# Models
+from app.core.models.codeModel import CodeModel
 
 router = APIRouter()
 
 
 @router.post("/compilar")
-def esp32_compiler(codigo: str = Form(...)):
-    print(codigo)
+def esp32_compiler(payload: CodeModel):
+    codigo = payload.code
     with tempfile.TemporaryDirectory() as temp_dir:
         sketch_path = os.path.join(temp_dir, "sketch.ino")
         with open(sketch_path, "w") as f:

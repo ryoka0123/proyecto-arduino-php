@@ -32,15 +32,17 @@ class ManagerController extends Controller
 
         $codigoArduino = $request->input('code');
 
-        $compilationServiceUrl = config('services.server_url.url');
-        
+        $compilationServiceUrl = env('COMPILATION_SERVICE_URL') . '/api/compiler/compilar';
+
         try {
+            // Guardar el código antes de compilar
+            $arduino->update(['code' => $codigoArduino]);
+
             // 2. Realizar la petición POST al servicio externo.
             // Se envía el código en formato JSON.
             $response = Http::timeout(15) // Esperar 15 segundos antes de considerar que falló
                            ->post($compilationServiceUrl, [
-                                'code' => $codigoArduino,
-                                'board' => 'arduino:avr:uno', // Opcional: puedes enviar el modelo de la placa
+                                'code' => $codigoArduino
                             ]);
 
             // 3. Procesar la respuesta del servicio.

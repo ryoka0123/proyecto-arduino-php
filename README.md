@@ -12,64 +12,85 @@ Este proyecto fue creado con [Laravel](https://laravel.com/).
 
 1. **Clona el repositorio**
 
-   ```sh
-   git clone https://github.com/ryoka0123/proyecto-arduino-php.git
-   cd proyecto-arduino-php
-   ```
+```sh
+$ git clone https://github.com/ryoka0123/proyecto-arduino-php.git
+$ cd proyecto-arduino-php
+```
 
 2. **Instala las dependencias de PHP**
 
-   ```sh
-   composer install
-   ```
+```sh
+$ composer install
+```
 
 3. **Instala las dependencias de python**
 
-   ### Crear el entorno virtual
-   ```sh
-   python -m venv .venv
-   ```
+### Crear el entorno virtual
+```sh
+$ python -m venv .venv
+```
 
-   ### Activar el entorno virtual
+### Activar el entorno virtual
 
-   #### Windows
+#### Windows
 
-   ```sh
-   .venv/Scripts/activate
-   ```
+```sh
+$ .venv/Scripts/activate
+```
 
-   #### Linux
-   ```sh
-   source .venv/bin/activate
-   ```
+#### Linux
+```sh
+$ source .venv/bin/activate
+```
 
-   ### Instalar las dependencias
+### Instalar las dependencias
 
-   ```sh
-   pip install -r requirements.txt
-   ```
+```sh
+$ pip install -r requirements.txt
+```
 
 
 4. **Ejecuta las migraciones**
 
-   ```sh
-   php artisan migrate
-   ```
+```sh
+$ php artisan migrate
+```
 
-## Ejecución
+5. ## Ejecución
 
 Inicia el servidor de desarrollo de Laravel:
 
 ```sh
-php artisan serve
+$ php artisan serve
 ```
 
 ```sh
-uvicorn app.core.main:app --host 0.0.0.0 --port 8000 --watch
+$ uvicorn app.core.main:app --host 0.0.0.0 --port 8001 --watch
 ```
 
-El proyecto estará disponible en [http://localhost:8000](http://localhost:8000).
+El proyecto estará disponible en http://localhost:8001.
 
----
 
-Si tienes dudas, revisa la [documentación oficial de Laravel](https://laravel.com/docs).
+6. ## Levantar servicio en docker
+
+### Crear contenedor
+
+Nos paramos en el directorio raíz donde esta nuestro dockerfile y ejecutamos el siguiente comando:
+```sh
+    $ docker build -t proyectopython .
+```
+
+### Levantar contenedor
+```sh
+    $ docker run --name contepython -dp 8001:8001 proyectopython
+```
+
+
+## Endpoint de prueba  
+
+http://localhost:8001/api/compiler/health
+
+
+## Endpoint Swagger
+
+http://localhost:8001/api/compiler/docs
