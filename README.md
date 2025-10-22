@@ -77,12 +77,12 @@ El proyecto estará disponible en http://localhost:8001.
 
 Nos paramos en el directorio raíz donde esta nuestro dockerfile y ejecutamos el siguiente comando:
 ```sh
-    $ docker build -t proyectopython .
+$ docker build -t proyectopython .
 ```
 
 ### Levantar contenedor
 ```sh
-    $ docker run --name contepython -dp 8001:8001 proyectopython
+$ docker run --name contepython -dp 8001:8001 proyectopython
 ```
 
 
