@@ -5,6 +5,7 @@
 # Dependencias de PHP y Node
 /vendor/
 node_modules/
+app/core/routers/temp_sketches
 
 # Archivos de entorno
 venv

@@ -1,85 +1,117 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import asyncio
-import subprocess
-import tempfile
-import os
+from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
+
+# Helper
+from app.core.helper.runCommands import run_command_realtime
+from app.core.helper.boards import get_detected_ports
+
+import os, asyncio
+
+load_dotenv()
+arduino_cli_path = os.getenv("ARDUINO_CLI")
+if not arduino_cli_path or not os.path.isfile(arduino_cli_path):
+    raise RuntimeError(f"No se encontró arduino-cli en: {arduino_cli_path}")
 
 router = APIRouter()
+executor = ThreadPoolExecutor(max_workers=2)
 
-async def stream_process(process: asyncio.subprocess.Process, websocket: WebSocket):
-    """Lee stdout y stderr de un proceso y lo transmite a un WebSocket."""
-    # asyncio.gather nos permite leer de stdout y stderr simultáneamente
-    await asyncio.gather(
-        stream_reader(process.stdout, "stdout", websocket),
-        stream_reader(process.stderr, "stderr", websocket)
-    )
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMP_SKETCH_DIR = os.path.join(PROJECT_DIR, "temp_sketches")
+os.makedirs(TEMP_SKETCH_DIR, exist_ok=True)
 
-async def stream_reader(stream: asyncio.StreamReader, stream_type: str, websocket: WebSocket):
-    """Lee líneas de un stream y las envía como mensajes JSON."""
-    while not stream.at_eof():
-        line = await stream.readline()
-        if line:
-            # Enviamos cada línea decodificada al cliente
-            await websocket.send_json({"type": stream_type, "data": line.decode('utf-8')})
+
+@router.get("/boards")
+async def list_boards():
+    loop = asyncio.get_running_loop()
+    ports = await loop.run_in_executor(executor, get_detected_ports)
+    return {"devices": ports}
+
 
 @router.websocket("/ws")
 async def websocket_compiler(websocket: WebSocket):
     await websocket.accept()
     try:
-        # 1. Esperar a recibir el código del cliente
         payload = await websocket.receive_json()
         codigo = payload.get("code")
+        port = payload.get("port")
+        board = payload.get("board")
+        filename = payload.get("filename")
 
-        if not codigo:
-            await websocket.send_json({"type": "error", "data": "No se recibió código para compilar."})
+        if not codigo or not port or not board or not filename:
+            await websocket.send_json({"type": "error", "data": "Faltan datos: código, puerto, FQBN o nombre de archivo."})
             return
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            dir_name = os.path.basename(temp_dir)
-            sketch_filename = f"{dir_name}.ino"
-            sketch_path = os.path.join(temp_dir, sketch_filename)
+        sketch_dir_name = os.path.splitext(filename)[0]
+        sketch_dir = os.path.join(TEMP_SKETCH_DIR, sketch_dir_name)
+        os.makedirs(sketch_dir, exist_ok=True)
 
-            with open(sketch_path, "w", encoding="utf-8") as f:
-                f.write(codigo)
+        sketch_path = os.path.join(sketch_dir, filename)
+        with open(sketch_path, "w", encoding="utf-8") as f:
+            f.write(codigo)
 
-            cmd = [
-                "arduino-cli", "compile",
-                "--fqbn", "esp32:esp32:esp32",
-                "--warnings", "all",
-                temp_dir
-            ]
+        await websocket.send_json({"type": "status", "data": "Iniciando compilación..."})
 
-            # 2. Iniciar el proceso de compilación
-            await websocket.send_json({"type": "status", "data": f"Iniciando compilación del sketch..."})
-            
-            # Usamos asyncio.create_subprocess_exec para no bloquear el servidor
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+        loop = asyncio.get_running_loop()
+
+        def send_stdout(line):
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_json({"type": "stdout", "data": line}),
+                loop
             )
 
-            # 3. Transmitir la salida en tiempo real
-            await stream_process(process, websocket)
+        def send_stderr(line):
+            asyncio.run_coroutine_threadsafe(
+                websocket.send_json({"type": "stderr", "data": line}),
+                loop
+            )
 
-            # 4. Esperar a que el proceso termine y enviar el resultado final
-            await process.wait()
+        compile_cmd = [
+            arduino_cli_path, "compile",
+            "--fqbn", board,
+            "--warnings", "none",
+            sketch_dir
+        ]
 
-            if process.returncode == 0:
-                await websocket.send_json({"type": "success", "data": "Compilación finalizada con éxito."})
-            else:
-                await websocket.send_json({"type": "error", "data": f"La compilación falló con el código de salida {process.returncode}."})
+        returncode = await loop.run_in_executor(
+            executor, run_command_realtime,
+            compile_cmd, send_stdout, send_stderr
+        )
+
+        if returncode != 0:
+            await websocket.send_json({"type": "error", "data": f"La compilación falló ({returncode})."})
+            return
+        else:
+            await websocket.send_json({"type": "success", "data": "Compilación finalizada con éxito."})
+
+        await websocket.send_json({"type": "status", "data": "Iniciando subida..."})
+
+        upload_cmd = [
+            arduino_cli_path, "upload",
+            "-p", port,
+            "--fqbn", board,
+            sketch_dir
+        ]
+
+        returncode = await loop.run_in_executor(
+            executor, run_command_realtime,
+            upload_cmd, send_stdout, send_stderr
+        )
+
+        if returncode == 0:
+            await websocket.send_json({"type": "success", "data": "Subida a la placa finalizada con éxito."})
+        else:
+            await websocket.send_json({"type": "error", "data": f"La subida falló ({returncode})."})
 
     except WebSocketDisconnect:
         print("Cliente desconectado.")
+
     except Exception as e:
-        error_message = f"Ocurrió un error inesperado en el servidor: {str(e)}"
-        print(error_message)
-        # Intentamos notificar al cliente si la conexión aún está abierta
+        print(f"Error inesperado: {e}")
         try:
-            await websocket.send_json({"type": "error", "data": error_message})
+            await websocket.send_json({"type": "error", "data": f"Error inesperado: {e}"})
         except:
             pass
+
     finally:
-        # Asegurarse de que el WebSocket se cierre
         await websocket.close()

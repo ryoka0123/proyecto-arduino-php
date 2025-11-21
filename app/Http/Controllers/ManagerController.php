@@ -11,9 +11,18 @@ class ManagerController extends Controller
 {
     public function index(Arduino $arduino)
     {
+        $baseUrl = env('COMPILATION_SERVICE_URL', 'http://127.0.0.1');
+        $port = env('COMPILATION_SERVICE_PORT', '8001');
+
+        $compilerServiceHttpUrl = rtrim($baseUrl, '/') . ':' . $port;
+
+        $compilerServiceWsUrl = str_replace(['http://', 'https://'], ['ws://', 'wss://'], $compilerServiceHttpUrl);
+
         return view('codeManager.codeEditor', [
             'arduino' => $arduino,
-            'code' => $arduino->code ?? ''
+            'code' => $arduino->code ?? '',
+            'compilerServiceHttpUrl' => $compilerServiceHttpUrl,
+            'compilerServiceWsUrl' => $compilerServiceWsUrl,
         ]);
     }
 
@@ -21,7 +30,8 @@ class ManagerController extends Controller
     {
         $request->validate(['code' => 'required|string']);
         $codigoArduino = $request->input('code');
-        $compilationServiceUrl = env('COMPILATION_SERVICE_URL') . '/api/compiler/compilar';
+        
+        $compilationServiceUrl = env('COMPILATION_SERVICE_URL') . ':' . env('COMPILATION_SERVICE_PORT') . '/api/compiler/compilar';
 
         try {
             $arduino->update(['code' => $codigoArduino]);

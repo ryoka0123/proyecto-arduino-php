@@ -13,6 +13,13 @@
     <script>
         tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#00335d", "background-light": "#f5f7f8", "background-dark": "rgb(16 26 35 / var(--tw-bg-opacity, 1))", "surface-light": "#FFFFFF", "surface-dark": "#1a2a38", "text-light": "#1C1C1E", "text-dark": "#E0E0E0", "secondary-text-light": "#6B7280", "secondary-text-dark": "#9CA3AF", "accent-blue": "#3B82F6", "accent-green": "#10B981", "accent-orange": "#F59E0B", "accent-red": "#EF4444" }, fontFamily: { display: ["Inter", "sans-serif"], mono: ["Roboto Mono", "monospace"] }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" } } } };
     </script>
+    <!-- Script para inyectar las URLs del servicio de compilación -->
+    <script>
+        window.compilerService = {
+            httpUrl: '{{ $compilerServiceHttpUrl ?? '' }}',
+            wsUrl: '{{ $compilerServiceWsUrl ?? '' }}'
+        };
+    </script>
     <style>
         .material-icons {
             font-size: 20px;
@@ -69,7 +76,8 @@
             color: #9CA3AF;
         }
 
-        .loading {
+        .loading,
+        button:disabled {
             cursor: not-allowed;
             opacity: 0.7;
         }
@@ -96,6 +104,21 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
+            <!-- Selector de Placa -->
+            <select id="board-selector" title="Seleccionar Placa"
+                class="h-10 px-4 bg-[#223749] text-white text-sm font-bold rounded-lg border border-gray-600 focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition">
+                <option value="esp32:esp32:esp32">ESP32 Dev Module</option>
+                <option value="esp32:esp32:esp32wrover">ESP32 Wrover Module</option>
+                <option value="arduino:avr:uno">Arduino Uno</option>
+            </select>
+
+            <!-- Selector de Puerto (se llenará dinámicamente) -->
+            <select id="port-selector" title="Seleccionar Puerto"
+                class="h-10 px-4 bg-[#223749] text-white text-sm font-bold rounded-lg border border-gray-600 focus:ring-2 focus:ring-accent-blue focus:border-accent-blue transition">
+                <option value="">Buscando puertos...</option>
+            </select>
+
+            <!-- Botones de Acción -->
             <button id="save-btn" data-url="{{ route('save-code', $arduino->id) }}" title="Guardar Código"
                 class="flex items-center gap-2 h-10 px-4 bg-accent-blue text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor"
@@ -155,9 +178,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             const codeEditor = document.getElementById('code-editor');
             const lineNumbers = document.getElementById('line-numbers');
-            const calculator = document.getElementById('cursor-position-calculator');
-            const compileBtn = document.getElementById('compile-btn');
             const saveBtn = document.getElementById('save-btn');
+            const compileBtn = document.getElementById('compile-btn');
+            const boardSelector = document.getElementById('board-selector');
+            const portSelector = document.getElementById('port-selector');
             const consoleTabBtn = document.getElementById('console-tab-btn');
             const errorTabBtn = document.getElementById('error-tab-btn');
             const consoleOutput = document.getElementById('console-output');
@@ -165,88 +189,97 @@
 
             let socket = null;
 
-            function showTab(tabName) {
-                if (tabName === 'console') {
-                    consoleOutput.style.display = 'block';
-                    errorOutput.style.display = 'none';
-                    consoleTabBtn.classList.add('active');
-                    errorTabBtn.classList.remove('active');
-                } else if (tabName === 'error') {
-                    consoleOutput.style.display = 'none';
-                    errorOutput.style.display = 'block';
-                    errorTabBtn.classList.add('active');
-                    consoleTabBtn.classList.remove('active');
+            function setButtonsLoading(isLoading) {
+                const buttons = [saveBtn, compileBtn];
+                buttons.forEach(btn => {
+                    btn.disabled = isLoading;
+                    btn.classList.toggle('loading', isLoading);
+                });
+            }
+
+            async function fetchPorts() {
+                try {
+                    const url = `${window.compilerService.httpUrl}/api/compiler/boards`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Error del servidor (${response.status})`);
+
+                    const data = await response.json();
+                    portSelector.innerHTML = '';
+
+                    if (data.devices && data.devices.length > 0) {
+                        data.devices.forEach(device => {
+                            const option = new Option(`${device.label} (${device.port})`, device.port);
+                            portSelector.add(option);
+                        });
+                    } else {
+                        portSelector.add(new Option('No se encontraron puertos', ''));
+                    }
+                } catch (error) {
+                    console.error("Error fetching ports:", error);
+                    portSelector.innerHTML = '';
+                    portSelector.add(new Option('Error al cargar puertos', ''));
                 }
+            }
+
+            function showTab(tabName) {
+                consoleOutput.style.display = (tabName === 'console') ? 'block' : 'none';
+                errorOutput.style.display = (tabName === 'error') ? 'block' : 'none';
+                consoleTabBtn.classList.toggle('active', tabName === 'console');
+                errorTabBtn.classList.toggle('active', tabName === 'error');
             }
             consoleTabBtn.addEventListener('click', () => showTab('console'));
             errorTabBtn.addEventListener('click', () => showTab('error'));
 
             function compileWithWebSocket() {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    console.log("Una compilación ya está en curso.");
-                    return;
-                }
+                if (socket && socket.readyState === WebSocket.OPEN) return;
 
-                const wsUrl = `ws://{{ env('COMPILATION_SERVICE_IP', '127.0.0.1') }}:{{ env('COMPILATION_SERVICE_PORT', '8001') }}/api/compiler/ws`;
+                const wsUrl = `${window.compilerService.wsUrl}/api/compiler/ws`;
                 socket = new WebSocket(wsUrl);
 
-                socket.onopen = function (event) {
-                    console.log("WebSocket conectado. Enviando código...");
-                    const code = codeEditor.value;
-                    socket.send(JSON.stringify({ code: code }));
+                socket.onopen = function () {
+                    const payload = {
+                        code: codeEditor.value,
+                        board: boardSelector.value,
+                        port: portSelector.value,
+                        filename: "{{ $arduino->nombre }}.ino"
+                    };
+                    socket.send(JSON.stringify(payload));
                 };
 
                 socket.onmessage = function (event) {
                     const message = JSON.parse(event.data);
-                    let content = message.data.trimEnd() + '\n';
-
-                    switch (message.type) {
-                        case 'stdout':
-                        case 'status':
-                            consoleOutput.textContent += content;
-                            consoleOutput.scrollTop = consoleOutput.scrollHeight;
-                            break;
-                        case 'stderr':
-                        case 'error':
-                            errorOutput.textContent += content;
-                            errorOutput.scrollTop = errorOutput.scrollHeight;
-                            showTab('error');
-                            break;
-                        case 'success':
-                            consoleOutput.textContent += `\n> ${message.data}\n`;
-                            consoleOutput.scrollTop = consoleOutput.scrollHeight;
-                            showTab('console');
-                            break;
+                    const content = (message.data || '').trimEnd() + '\n';
+                    if (['stderr', 'error'].includes(message.type)) {
+                        errorOutput.textContent += content;
+                        showTab('error');
+                    } else {
+                        consoleOutput.textContent += content;
                     }
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                    errorOutput.scrollTop = errorOutput.scrollHeight;
                 };
 
                 socket.onclose = function (event) {
-                    console.log("WebSocket desconectado.");
-                    compileBtn.disabled = false;
-                    saveBtn.disabled = false;
-                    compileBtn.classList.remove('loading');
-                    saveBtn.classList.remove('loading');
+                    setButtonsLoading(false);
                     if (!event.wasClean) {
-                        let errorMessage = '> Conexión con el servicio de compilación perdida. ¿Está el servidor en línea?\n';
-                        errorOutput.textContent += errorMessage;
+                        errorOutput.textContent += '> Conexión con el servicio de compilación perdida.\n';
                         showTab('error');
                     }
+                    socket = null;
                 };
 
                 socket.onerror = function (error) {
-                    console.error(`Error de WebSocket: ${error.message}`);
-                    errorOutput.textContent += '> Ocurrió un error en la conexión con el compilador.\n';
+                    errorOutput.textContent += '> Error de conexión con el servicio de compilación.\n';
                     showTab('error');
+                    setButtonsLoading(false);
+                    socket = null;
                 };
             }
 
             compileBtn.addEventListener('click', () => {
-                consoleOutput.textContent = '';
+                consoleOutput.textContent = '> Iniciando compilación...\n';
                 errorOutput.textContent = '';
-                compileBtn.disabled = true;
-                saveBtn.disabled = true;
-                compileBtn.classList.add('loading');
-                saveBtn.classList.add('loading');
+                setButtonsLoading(true);
                 showTab('console');
                 compileWithWebSocket();
             });
@@ -256,10 +289,7 @@
                 const url = saveBtn.dataset.url;
                 const code = codeEditor.value;
 
-                compileBtn.disabled = true;
-                saveBtn.disabled = true;
-                compileBtn.classList.add('loading');
-                saveBtn.classList.add('loading');
+                setButtonsLoading(true);
                 consoleOutput.textContent = '> Guardando...';
                 errorOutput.textContent = '';
                 showTab('console');
@@ -270,7 +300,7 @@
                     body: JSON.stringify({ code: code })
                 })
                     .then(response => {
-                        if (!response.ok) { throw new Error('La respuesta del servidor no fue OK'); }
+                        if (!response.ok) throw new Error(`Error del servidor (${response.status})`);
                         return response.json();
                     })
                     .then(result => {
@@ -281,10 +311,7 @@
                         showTab('error');
                     })
                     .finally(() => {
-                        compileBtn.disabled = false;
-                        saveBtn.disabled = false;
-                        compileBtn.classList.remove('loading');
-                        saveBtn.classList.remove('loading');
+                        setButtonsLoading(false);
                     });
             });
 
@@ -292,47 +319,10 @@
                 const lineCount = codeEditor.value.split('\n').length;
                 lineNumbers.innerHTML = Array.from({ length: lineCount || 1 }, (_, i) => i + 1).join('<br/>');
             }
-
-            function scrollCursorIntoView() {
-                const styles = window.getComputedStyle(codeEditor);
-                ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'letterSpacing', 'tabSize'].forEach(prop => { calculator.style[prop] = styles[prop]; });
-                const textBeforeCursor = codeEditor.value.substring(0, codeEditor.selectionStart);
-                calculator.innerHTML = textBeforeCursor.replace(/\n/g, '<br/>') + '<span></span>';
-                const cursorSpan = calculator.querySelector('span');
-                const cursorTop = cursorSpan.offsetTop;
-                const cursorHeight = cursorSpan.offsetHeight;
-                const editorVisibleTop = codeEditor.scrollTop;
-                const editorVisibleBottom = editorVisibleTop + codeEditor.clientHeight;
-                if (cursorTop < editorVisibleTop) { codeEditor.scrollTop = cursorTop; }
-                else if (cursorTop + cursorHeight > editorVisibleBottom) { codeEditor.scrollTop = cursorTop + cursorHeight - codeEditor.clientHeight; }
-            }
-
-            codeEditor.addEventListener('keydown', function (e) {
-                if (e.key === 'Tab' || e.key === 'Enter') {
-                    e.preventDefault();
-                    const start = this.selectionStart;
-                    const end = this.selectionEnd;
-                    if (e.key === 'Tab') {
-                        this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
-                        this.selectionStart = this.selectionEnd = start + 4;
-                    } else if (e.key === 'Enter') {
-                        let lineStart = this.value.lastIndexOf('\n', start - 1) + 1;
-                        let currentLine = this.value.substring(lineStart, start);
-                        const indentation = currentLine.match(/^\s*/)[0];
-                        const textToInsert = '\n' + indentation;
-                        this.value = this.value.substring(0, start) + textToInsert + this.value.substring(end);
-                        this.selectionStart = this.selectionEnd = start + textToInsert.length;
-                    }
-                    updateLineNumbers();
-                    requestAnimationFrame(() => { scrollCursorIntoView(); lineNumbers.scrollTop = codeEditor.scrollTop; });
-                }
-            });
-
-            codeEditor.addEventListener('keyup', (e) => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) { scrollCursorIntoView(); } });
-            codeEditor.addEventListener('click', scrollCursorIntoView);
             codeEditor.addEventListener('scroll', () => { lineNumbers.scrollTop = codeEditor.scrollTop; });
             codeEditor.addEventListener('input', updateLineNumbers);
 
+            fetchPorts();
             updateLineNumbers();
             showTab('console');
         });

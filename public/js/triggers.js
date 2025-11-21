@@ -1,13 +1,4 @@
-// ========================================================================
-// || FUNCIONES GLOBALES (Necesarias para los `onclick` del HTML)      ||
-// ========================================================================
 
-/**
- * Muestra el modal de edición y rellena sus campos.
- * @param {number} id - El ID del trigger.
- * @param {string} nombre - El nombre actual del trigger.
- * @param {string} contexto - El contexto actual del trigger.
- */
 function openEditModal(id, nombre, contexto) {
     const modal = document.getElementById('editModal');
     if (!modal) {
@@ -21,17 +12,11 @@ function openEditModal(id, nombre, contexto) {
     modal.classList.remove('hidden');
 }
 
-/** Cierra el modal de edición. */
 function closeEditModal() {
     const modal = document.getElementById('editModal');
     if (modal) modal.classList.add('hidden');
 }
 
-/**
- * Muestra el modal de confirmación para eliminar.
- * @param {number} id - El ID del trigger a eliminar.
- * @param {string} nombre - El nombre del trigger para mostrar en el mensaje.
- */
 function openDeleteModal(id, nombre) {
     const modal = document.getElementById('modalEliminarTrigger');
     if (!modal) {
@@ -44,18 +29,12 @@ function openDeleteModal(id, nombre) {
     modal.classList.remove('hidden');
 }
 
-/** Cierra el modal de eliminación. */
 function closeDeleteModal() {
     const modal = document.getElementById('modalEliminarTrigger');
     if (modal) modal.classList.add('hidden');
 }
 
-/**
- * Envía la petición HTTP para accionar un trigger en el dispositivo.
- * @param {string} ip - La IP del dispositivo.
- * @param {string} contexto - El endpoint/contexto a llamar.
- * @param {HTMLButtonElement} btn - El botón que fue presionado.
- */
+
 function accionarTrigger(ip, contexto, btn) {
     const originalText = btn.innerText;
     btn.disabled = true;
@@ -71,9 +50,6 @@ function accionarTrigger(ip, contexto, btn) {
         });
 }
 
-// ========================================================================
-// || CÓDIGO DE INICIALIZACIÓN (Se ejecuta cuando el DOM está listo)  ||
-// ========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -117,15 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let encontrado = false;
             document.querySelectorAll('.flex.flex-wrap.gap-5.p-4 > div').forEach(card => {
-                let nombre = quitarTildes(card.querySelector('h4').innerText.toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, '_'));
+                let nombre = quitarTildes(card.querySelector('p').innerText.toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, '_'));
                 if (texto === nombre) {
                     card.querySelector('button.bg-\\[\\#2094f3\\]').click();
                     encontrado = true;
                 }
             });
-            if (!encontrado) alert('No se reconoció ningún trigger con ese nombre.');
+            if (!encontrado) alert(`No se reconoció ningún trigger con el nombre ${texto}.`);
         };
     } else if (voiceBtn) {
-        voiceBtn.style.display = 'none'; // Ocultar si no es compatible
+        voiceBtn.style.display = 'none';
     }
 });

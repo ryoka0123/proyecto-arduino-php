@@ -51,7 +51,6 @@
                     </div>
                 </div>
 
-                <!-- Contenedor Derecho (NUEVO) -->
                 <div>
                     <a href="{{ route('editor-codigo', $arduino->id) }}" title="Editor de Código"
                        class="flex items-center gap-2 h-10 px-4 bg-[#2094f3] text-white text-sm font-bold rounded-lg hover:bg-[#1a7ad1] transition-colors">
@@ -121,7 +120,6 @@
             </main>
         </div>
 
-        {{-- MODALES (El HTML sigue aquí) --}}
         <div id="modalEliminarTrigger"
             class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center hidden z-50">
             <div class="bg-[#182834] p-6 rounded-lg shadow-xl w-full max-w-sm text-center border border-[#223749]">
@@ -163,7 +161,6 @@
             </svg>
         </button>
 
-        {{-- SCRIPT EXTERNO CARGADO AL FINAL PARA MÁXIMA COMPATIBILIDAD --}}
         <script src="{{ asset('js/triggers.js') }}"></script>
     </div>
 </body>
