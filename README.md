@@ -97,26 +97,6 @@ ARDUINO_CLI=ruta/absoluta/a/tu/arduino-cli.exe
 # ARDUINO_CLI=C:\Users\tu_usuario\Documents\arduino-cli.exe
 ```
 
-### Variables importantes a configurar:
-
-  ------------------------------------------------------------------------
-  Variable                       Descripción
-  ------------------------------ -----------------------------------------
-  **COMPILATION_SERVICE_URL**    Dirección IP o dominio donde se ejecuta
-                                 el servicio de compilación (FastAPI).
-
-  **COMPILATION_SERVICE_PORT**   Puerto del servicio FastAPI (por defecto:
-                                 8001).
-
-  **ARDUINO_CLI**                Ruta absoluta del ejecutable
-                                 `arduino-cli`. En Windows debe incluir el
-                                 `.exe`.
-
-  **DB_CONNECTION**              Por defecto es `sqlite`. Si usas otra
-                                 base de datos, configura las credenciales
-                                 correspondientes.
-  ------------------------------------------------------------------------
-
 ## Ejecución
 
 Inicia el servidor de desarrollo de Laravel:
