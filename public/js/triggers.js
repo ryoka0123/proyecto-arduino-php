@@ -1,4 +1,3 @@
-
 function openEditModal(id, nombre, contexto) {
     const modal = document.getElementById('editModal');
     if (!modal) {
@@ -35,19 +34,29 @@ function closeDeleteModal() {
 }
 
 
-function accionarTrigger(ip, contexto, btn) {
+async function accionarTrigger(ip, contexto, btn) {
     const originalText = btn.innerText;
     btn.disabled = true;
     btn.innerText = "Accionando...";
-    fetch(`http://${ip}/${contexto}`)
-        .catch(error => {
-            console.error("Error de conexión:", error);
-            alert('No se pudo conectar con el dispositivo.');
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        });
+    try {
+        const response = await fetch(`http://${ip}/${contexto}`);
+        if (!response.ok) {
+            console.error(`Error en la respuesta del servidor: ${response.status} ${response.statusText}`);
+            alert('El servidor respondió con un error.');
+        } else {
+            alert('Acción realizada con éxito.');
+        }
+    } catch (error) {
+        console.error("Error de conexión:", error);
+        alert('No se pudo conectar con el dispositivo.');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
+}
+
+function quitarTildes(texto) {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 
@@ -88,12 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onend = () => voiceBtn.classList.remove('animate-ping');
         recognition.onerror = (e) => console.error('Error de reconocimiento de voz:', e.error);
         recognition.onresult = (event) => {
-            const quitarTildes = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            let texto = quitarTildes(event.results[0][0].transcript.toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, '_'));
-            
+            let texto = event.results[0][0].transcript.toLowerCase().trim().replace(/[^\w\sáéíóúüñ]/g, '').replace(/\s+/g, '_');
+            texto = quitarTildes(texto);
             let encontrado = false;
             document.querySelectorAll('.flex.flex-wrap.gap-5.p-4 > div').forEach(card => {
-                let nombre = quitarTildes(card.querySelector('p').innerText.toLowerCase().trim().replace(/[^\w\s]/g, '').replace(/\s+/g, '_'));
+                let nombre = card.querySelector('p').innerText.toLowerCase().trim().replace(/[^\w\sáéíóúüñ]/g, '').replace(/\s+/g, '_');
                 if (texto === nombre) {
                     card.querySelector('button.bg-\\[\\#2094f3\\]').click();
                     encontrado = true;
