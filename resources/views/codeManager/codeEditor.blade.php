@@ -19,6 +19,7 @@
             httpUrl: '{{ $compilerServiceHttpUrl ?? '' }}',
             wsUrl: '{{ $compilerServiceWsUrl ?? '' }}'
         };
+        window.arduinoName = '{{ $arduino->nombre }}';
     </script>
     <style>
         .material-icons {

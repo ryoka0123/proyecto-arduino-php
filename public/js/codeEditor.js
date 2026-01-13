@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 code: codeEditor.value,
                 board: boardSelector.value,
                 port: portSelector.value,
-                filename: "{{ $arduino->nombre }}.ino"
+                filename: window.arduinoName + ".ino"
             };
             socket.send(JSON.stringify(payload));
         };

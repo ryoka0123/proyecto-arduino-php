@@ -48,9 +48,9 @@ pip install -r requirements.txt
 4.  **Instala las dependencias de Arduino-cli**
 
 ```sh
-arduino-cli config init
-arduino-cli core update-index
-arduino-cli core install esp32:esp32
+.\arduino-cli.exe config init
+.\arduino-cli.exe core update-index
+.\arduino-cli.exe core install esp32:esp32
 ```
 
 5.  **Ejecuta las migraciones**
